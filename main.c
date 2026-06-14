@@ -39,8 +39,6 @@ int main(int argc, char *argv[])
     noecho();
     nodelay(stdscr, TRUE);
     curs_set(0);
-    MEVENT event;
-    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
 
     /* init colors for color mode output. */
     start_color();
