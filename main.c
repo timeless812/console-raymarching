@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     float          aspect;
     const float    pixel_aspect = 11.f / 23.f;
     const int      gradient_size = (truecolor?256:24);
-    cl_float3      pos = {-0.5f, 0.f, 0.f};
+    cl_float3      pos = {-2.f, 0.f, 0.f};
     cl_float3      rotation = {0.f, 0.f, 0.f};
     int            *colors;
 
