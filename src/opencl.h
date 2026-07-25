@@ -1,8 +1,11 @@
 #ifndef OPENCL_H
 #define OPENCL_H
 
-#define CL_TARGET_OPENCL_VERSION 300
+#define CL_TARGET_OPENCL_VERSION 120
 #include <CL/cl.h>
+
+#include "terminal.h"
+#include "camera.h"
 
 typedef struct
 {
@@ -11,21 +14,14 @@ typedef struct
     cl_program          program;
     cl_kernel           render_kernel;
     cl_mem              colors_buf;
-} OpenCLEnv;
+    size_t              global_size[2];
+}
+opencl_env;
 
-OpenCLEnv init_opencl
-(
-    const char*         kernel_filename,
-    int                 width,
-    int                 height,
-    float               aspect,
-    float               pixel_aspect,
-    int                 gradient_size,
-    cl_float3           pos,
-    cl_float3           rotation,
-    int*                colors
-);
+opencl_env init_opencl(const char* kernel_filename, terminal term);
 
-void cleanup(OpenCLEnv env);
+void update_args(opencl_env cl, camera cam);
+void run_kernel(opencl_env cl, terminal term);
+void cleanup_cl(opencl_env cl);
 
 #endif

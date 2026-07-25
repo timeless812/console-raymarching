@@ -5,21 +5,10 @@
     if (err != CL_SUCCESS) \
         { fprintf(stderr, "OpenCL error %d\n", err); exit(1); }
 
-OpenCLEnv init_opencl
-(
-    const char*    kernel_filename,
-    int            width,
-    int            height,
-    float          aspect,
-    float          pixel_aspect,
-    int            gradient_size,
-    cl_float3      pos,
-    cl_float3      rotation,
-    int*           colors
-)
+opencl_env init_opencl(const char* kernel_filename, terminal term)
 {
-    OpenCLEnv  env = {0};
-    cl_int     err;
+    opencl_env cl = {0};
+    cl_int err;
     
     /* get platform. */
     cl_uint         num_platforms;
@@ -64,12 +53,9 @@ OpenCLEnv init_opencl
     free(devices);
 
     /* create context and queue. */
-    const cl_queue_properties properties[] = {0};
-
-    env.context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
+    cl.context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
     CHECK_ERR(err);
-
-    env.queue = clCreateCommandQueueWithProperties(env.context, device, properties, &err);
+    cl.queue = clCreateCommandQueue(cl.context, device, 0, &err);
     CHECK_ERR(err);
 
     /* load and compile kernel. */
@@ -94,51 +80,63 @@ OpenCLEnv init_opencl
     fclose(kernel_file);
     kernel_source[kernel_size] = '\0';
 
-    env.program = clCreateProgramWithSource(env.context, 1, (const char**)&kernel_source, NULL, &err);
+    cl.program = clCreateProgramWithSource(cl.context, 1, (const char**)&kernel_source, NULL, &err);
 
     CHECK_ERR(err);
     free(kernel_source);
     
-    err = clBuildProgram(env.program, 1, &device, NULL, NULL, NULL);
+    err = clBuildProgram(cl.program, 1, &device, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
     {
         size_t  log_size;
         char*   build_log;
 
-        clGetProgramBuildInfo(env.program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+        clGetProgramBuildInfo(cl.program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
         build_log = malloc(log_size);
-        clGetProgramBuildInfo(env.program, device, CL_PROGRAM_BUILD_LOG, log_size, build_log, NULL);
+        clGetProgramBuildInfo(cl.program, device, CL_PROGRAM_BUILD_LOG, log_size, build_log, NULL);
         fprintf(stderr, "build error:\n%s\n", build_log);
         free(build_log);
         exit(1);
     }
 
     /* make kernel. */
-    env.render_kernel = clCreateKernel(env.program, "render", &err);
+    cl.render_kernel = clCreateKernel(cl.program, "render", &err);
     CHECK_ERR(err);
 
-    /* create color buffer. */
-    env.colors_buf = clCreateBuffer(env.context, CL_MEM_WRITE_ONLY, width * height * sizeof(int), NULL, &err);
+    /* make colors buffer. */
+    cl.colors_buf = clCreateBuffer(cl.context, CL_MEM_WRITE_ONLY, term.size, NULL, &err);
     CHECK_ERR(err);
 
     /* set kernel args. */
-    clSetKernelArg(env.render_kernel, 0, sizeof(int),        &width);
-    clSetKernelArg(env.render_kernel, 1, sizeof(int),        &height);
-    clSetKernelArg(env.render_kernel, 2, sizeof(float),      &aspect);
-    clSetKernelArg(env.render_kernel, 3, sizeof(float),      &pixel_aspect);
-    clSetKernelArg(env.render_kernel, 4, sizeof(int),        &gradient_size);
-    clSetKernelArg(env.render_kernel, 5, sizeof(cl_float3),  &pos);
-    clSetKernelArg(env.render_kernel, 6, sizeof(cl_float3),  &rotation);
-    clSetKernelArg(env.render_kernel, 7, sizeof(cl_mem),     &env.colors_buf);
+    clSetKernelArg(cl.render_kernel, 0, sizeof(cl_mem),  &cl.colors_buf);
+    clSetKernelArg(cl.render_kernel, 1, sizeof(int),     &term.width);
+    clSetKernelArg(cl.render_kernel, 2, sizeof(int),     &term.height);
+    clSetKernelArg(cl.render_kernel, 5, sizeof(int),     &term.total_colors);
+    clSetKernelArg(cl.render_kernel, 6, sizeof(int),     &term.pixel_aspect);
 
-    return env;
+    cl.global_size[0] = term.width;
+    cl.global_size[1] = term.height;
+
+    return cl;
 }
 
-void cleanup(OpenCLEnv env)
+void update_args(opencl_env cl, camera cam)
 {
-    clReleaseMemObject(env.colors_buf);
-    clReleaseKernel(env.render_kernel);
-    clReleaseProgram(env.program);
-    clReleaseCommandQueue(env.queue);
-    clReleaseContext(env.context);
+    clSetKernelArg(cl.render_kernel, 3, sizeof(cl_float3),  &cam.position);
+    clSetKernelArg(cl.render_kernel, 4, sizeof(cl_float3),  &cam.rotation);
+}
+
+void run_kernel(opencl_env cl, terminal term)
+{
+    clEnqueueNDRangeKernel(cl.queue, cl.render_kernel, 2, NULL, cl.global_size, NULL, 0, NULL, NULL);
+    clEnqueueReadBuffer(cl.queue, cl.colors_buf, CL_TRUE, 0, term.size, term.colors, 0, NULL, NULL);
+}
+
+void cleanup_cl(opencl_env cl)
+{
+    clReleaseMemObject(cl.colors_buf);
+    clReleaseKernel(cl.render_kernel);
+    clReleaseProgram(cl.program);
+    clReleaseCommandQueue(cl.queue);
+    clReleaseContext(cl.context);
 }

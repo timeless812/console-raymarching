@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -O2 -Iinclude
-LDFLAGS = -lncurses -lOpenCL -lm
+LDFLAGS = -lOpenCL -lncurses -lm
 BUILD = build
 TARGET = $(BUILD)/raymarching
 
