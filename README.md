@@ -34,7 +34,7 @@ for the GPU engine, you will need the OpenCL library on the system.
 I also note that during normal startup it is the CPU engine that works (for GPU, add the -g flag).
 
 ## How to Build
-the project is built through the Makefile. I haven't tested it on Windows, but I'll show you how to cross-compile on Linux.
+the project is built through the Makefile. I didn't test on Windows, so I just used a cross compiler.
 
 The build requires the ncurses and OpenCL libraries. If you won't try rendering through the GPU, you can only install OpenCL header files.
 
@@ -74,40 +74,6 @@ You can start it manually
 
 I also note that there are -g (GPU rendering) and -c (color mode) flags. 
 The color mode displays colored spaces instead of symbols. It may not work on Windows.
-
-## Cross-Compile
-
-I didn't build this project on Windows, so I'll show you how I cross-compiled.
-
-First, you need to install a cross compiler
-```sh
-sudo pacman -S mingw-w64-gcc
-```
-
-Now you need the right libraries.
-
-There are none in pacman repositories, so I install them via AUR
-```sh
-yay -S mingw-w64-ncurses mingw-w64-opencl-headers mingw-w64-opencl-icd
-```
-
-And here is the cross-compilation itself
-```sh
-x86_64-w64-mingw32-gcc \
-  -DNCURSES_STATIC \
-  -I/usr/x86_64-w64-mingw32/include/ncursesw \
-  -L/usr/x86_64-w64-mingw32/lib \
-  main.c src/*.c \
-  -Wl,-Bstatic -lncursesw -lwinpthread \
-  -Wl,-Bdynamic -lOpenCL \
-  -lm \
-  -o build/raymarching.exe
-```
-
-I've been testing this with wineconsole
-```sh
-wineconsole build/raymarching.exe
-```
 
 ## To do List
 
