@@ -30,25 +30,19 @@ Also you may change the speed and sensitivity in src/camera.c.
 ## CPU and GPU engine
 
 In this project, there are two raymarching engines: one for CPU (src/cpu_engine.c), the other for GPU (kernel.cl).
-for the GPU engine, you will need the OpenCL library on the system.
-I also note that during normal startup it is the CPU engine that works (for GPU, add the -g flag).
+For the GPU engine, you will need the OpenCL library on the system.
 
 ## How to Build
-the project is built through the Makefile. I didn't test on Windows, so I just used a cross compiler.
+The project is built through the Makefile. I didn't test on Windows, so I just used a cross compiler.
 
-The build requires the ncurses and OpenCL libraries. If you won't try rendering through the GPU, you can only install OpenCL header files.
+The build requires the ncurses library. If you want try rendering through the GPU, you can install OpenCL library.
 
-I have Arch linux and I installed this
-```sh
-sudo pacman -S opencl-headers
-```
-
-## Installing OpenCL (Optional!)
+## Installing OpenCL (Optional)
 
 I have intel UHD graphics and I installed OpenCL like this
 
 ```sh
-sudo pacman -S intel-compute-runtime ocl-icd
+sudo pacman -S opencl-headers intel-compute-runtime ocl-icd
 ```
 
 To verify that OpenCL works, you can check via clinfo
@@ -59,12 +53,15 @@ clinfo
 
 ## Build
 
-Finally, we can build the project
-
 ```sh
 make all
 # or
 make clean compile
+```
+
+For rendering via GPU add the OPENCL=1
+```
+make all OPENCL=1
 ```
 
 You can start it manually
@@ -72,8 +69,8 @@ You can start it manually
 ./build/raymarching
 ```
 
-I also note that there are -g (GPU rendering) and -c (color mode) flags. 
-The color mode displays colored spaces instead of symbols. It may not work on Windows.
+I'll note that main.c has a color mode flag.
+The color mode displays colored spaces instead of symbols. This may not work on some terminals and on Windows.
 
 ## To do List
 
