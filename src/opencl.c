@@ -1,5 +1,6 @@
 #include "opencl.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #define CHECK_ERR(err) \
     if (err != CL_SUCCESS) \
@@ -77,6 +78,12 @@ opencl_env init_opencl(const char* kernel_filename, terminal term)
     
     read = fread(kernel_source, 1, kernel_size, kernel_file);
     
+    if (read != kernel_size)
+    {
+        fprintf(stderr, "read error\n");
+        exit(1);
+    }
+
     fclose(kernel_file);
     kernel_source[kernel_size] = '\0';
 
